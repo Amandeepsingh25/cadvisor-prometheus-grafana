@@ -13,6 +13,7 @@ services:
     depends_on:
       - backend
       - cadvisor
+      - node-exporter  # Add this line
 
   backend:
     build:
@@ -25,8 +26,6 @@ services:
       - 9090:9090
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
@@ -39,6 +38,23 @@ services:
     ports:
       - 8080:8080
 
+  node-exporter:  # Define the Node Exporter service
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--web.listen-address=:9113'
+      - '--web.telemetry-path=/metrics'
+    ports:
+      - 9113:9113
 
   grafana:
     image: grafana/grafana
